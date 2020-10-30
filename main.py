@@ -93,7 +93,7 @@ def convert_xml_to_json(xml_file_name):
                     'id': len(annotations) + 1,
                     'image_id': image_id,
                     'category_id': 1,
-                    'iscrowd': len(objects) > 1,
+                    'iscrowd': 1 if (len(objects) > 1) else 0,
                     'bbox': bbox,
                     'width': width,
                     'height': height
