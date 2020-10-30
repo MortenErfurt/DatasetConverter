@@ -1,4 +1,5 @@
 annotations.json
-wk1gt.xml
+xml_annotations/*.xml
+json_annotations/*.json
 venv/*
 .idea/*

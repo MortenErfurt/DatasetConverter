@@ -1,14 +1,27 @@
 import json
+import os
 import xmltodict
 
+global xml_path, json_path
+xml_path = "./xml_annotations/"
+json_path = "./json_annotations/"
 
-def init():
-    with open("wk1gt.xml") as xml_file:
+def run():
+    if not os.path.exists(xml_path):
+        os.mkdir(xml_path)
+
+    if not os.path.exists(json_path):
+        os.mkdir(json_path)
+
+    for file_name in os.scandir(xml_path):
+        convert_xml_to_json(file_name.name[:-4])
+
+def convert_xml_to_json(xml_file_name):
+    with open(xml_path + xml_file_name + ".xml") as xml_file:
         data_dict = xmltodict.parse(xml_file.read())
 
     xml_file.close()
 
-    #
     info = []
     licences = []
     categories = []
@@ -16,6 +29,21 @@ def init():
     annotations = []
     empty_images = []
     person_images = []
+
+    info.append({
+        'description': "CAVIAR Dataset",
+        'url': "http://homepages.inf.ed.ac.uk/rbf/CAVIAR/",
+        'version': "1.0.0",
+        'year': 2004,
+        'contributor': "EC Funded CAVIAR project/IST 2001 37540",
+        'date_created': ""
+    })
+
+    licences.append({
+        'id': 1,
+        'name': "Attribution-NonCommercial-ShareAlike License",
+        'url': "http://creativecommons.org/licenses/by-nc-sa/2.0/"
+    })
 
     categories.append({
         'id': 1,
@@ -75,10 +103,6 @@ def init():
 
                 annotations.append(annotation)
 
-
-
-
-
     json_dict = {
         'info': info,
         'licences': licences,
@@ -89,14 +113,11 @@ def init():
         'person_images': person_images
     }
 
-
-
     json_data = json.dumps(json_dict)
 
-    with open("annotations.json", "w") as json_file:
+    with open(json_path + xml_file_name + "_annotations.json", "w") as json_file:
         json_file.write(json_data)
 
     json_file.close()
 
-
-init()
+run()
