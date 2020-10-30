@@ -30,14 +30,14 @@ def convert_xml_to_json(xml_file_name):
         'contributor': "EC Funded CAVIAR project/IST 2001 37540",
         'date_created': ""
     }
-    licences = []
+    licenses = []
     categories = []
     images = []
     annotations = []
     empty_images = []
     person_images = []
 
-    licences.append({
+    licenses.append({
         'url': "http://creativecommons.org/licenses/by-nc-sa/2.0/",
         'id': 1,
         'name': "Attribution-NonCommercial-ShareAlike License"
@@ -103,7 +103,7 @@ def convert_xml_to_json(xml_file_name):
 
     json_dict = {
         'info': info,
-        'licences': licences,
+        'licenses': licenses,
         'categories': categories,
         'images': images,
         'annotations': annotations,
