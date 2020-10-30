@@ -22,7 +22,14 @@ def convert_xml_to_json(xml_file_name):
 
     xml_file.close()
 
-    info = []
+    info = {
+        'description': "CAVIAR Dataset",
+        'url': "http://homepages.inf.ed.ac.uk/rbf/CAVIAR/",
+        'version': "1.0.0",
+        'year': 2004,
+        'contributor': "EC Funded CAVIAR project/IST 2001 37540",
+        'date_created': ""
+    }
     licences = []
     categories = []
     images = []
@@ -30,19 +37,10 @@ def convert_xml_to_json(xml_file_name):
     empty_images = []
     person_images = []
 
-    info.append({
-        'description': "CAVIAR Dataset",
-        'url': "http://homepages.inf.ed.ac.uk/rbf/CAVIAR/",
-        'version': "1.0.0",
-        'year': 2004,
-        'contributor': "EC Funded CAVIAR project/IST 2001 37540",
-        'date_created': ""
-    })
-
     licences.append({
+        'url': "http://creativecommons.org/licenses/by-nc-sa/2.0/",
         'id': 1,
-        'name': "Attribution-NonCommercial-ShareAlike License",
-        'url': "http://creativecommons.org/licenses/by-nc-sa/2.0/"
+        'name': "Attribution-NonCommercial-ShareAlike License"
     })
 
     categories.append({
