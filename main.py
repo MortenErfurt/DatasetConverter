@@ -1,3 +1,7 @@
+# Used for understanding COCO annotations:
+# https://medium.com/datadriveninvestor/how-to-create-custom-coco-data-set-for-object-detection-96ec91958f36
+# https://cocodataset.org/#format-data
+
 import json
 import os
 import xmltodict
@@ -5,6 +9,7 @@ import xmltodict
 global xml_path, json_path
 xml_path = "./xml_annotations/"
 json_path = "./json_annotations/"
+
 
 def run():
     if not os.path.exists(xml_path):
@@ -15,6 +20,7 @@ def run():
 
     for file_name in os.scandir(xml_path):
         convert_xml_to_json(file_name.name[:-4])
+
 
 def convert_xml_to_json(xml_file_name):
     with open(xml_path + xml_file_name + ".xml") as xml_file:
@@ -30,6 +36,7 @@ def convert_xml_to_json(xml_file_name):
         'contributor': "EC Funded CAVIAR project/IST 2001 37540",
         'date_created': ""
     }
+
     licenses = []
     categories = []
     images = []
@@ -82,11 +89,14 @@ def convert_xml_to_json(xml_file_name):
                 object_list.append(objects)
 
             for obj in object_list:
+                bbox_width = float(obj['box']['@w'])
+                bbox_height = float(obj['box']['@h'])
+
                 bbox = [
-                    obj['box']['@h'],
-                    obj['box']['@w'],
-                    obj['box']['@xc'],
-                    obj['box']['@yc']
+                    float(obj['box']['@xc']),
+                    float(obj['box']['@yc']),
+                    bbox_width,
+                    bbox_height
                 ]
 
                 annotation = {
@@ -96,7 +106,9 @@ def convert_xml_to_json(xml_file_name):
                     'iscrowd': 1 if (len(objects) > 1) else 0,
                     'bbox': bbox,
                     'width': width,
-                    'height': height
+                    'height': height,
+                    'segmentation': [],
+                    'area': bbox_width * bbox_height
                 }
 
                 annotations.append(annotation)
@@ -117,5 +129,6 @@ def convert_xml_to_json(xml_file_name):
         json_file.write(json_data)
 
     json_file.close()
+
 
 run()

@@ -3,3 +3,5 @@ xml_annotations/*.xml
 json_annotations/*.json
 venv/*
 .idea/*
+images/
+images_with_boxes/
