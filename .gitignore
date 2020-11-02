@@ -4,4 +4,4 @@ json_annotations/*.json
 venv/*
 .idea/*
 images/
-images_with_boxes/
+processed_images/

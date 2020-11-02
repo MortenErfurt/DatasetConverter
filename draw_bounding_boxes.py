@@ -1,34 +1,49 @@
-# Kode fra Søby:
-# anns = coco.loadAnns(annIds)
-# for i in anns:
-# [x,y,w,h] = i['bbox']
-# cv2.rectangle(Image, (int(x), int(y)), ((int(x+w), int(y+h)), (255,0,0), 5)
-# cv2.imshow(' ',Image)
-# plt.show()
-#
-# 'segmentation': []
-# 'area': box_width * box_height
-# 'iscrowd': 0
-
 import json
+
 import cv2
-# import matplotlib.pyplot as plt
 
-json_file = open("./json_annotations/wk1gt_annotations.json")
-coco = json.load(json_file)
-json_file.close()
 
-for annotation in coco['annotations']:
-    image_id = annotation['image_id']
-    file_name = ""
+def run():
+    json_file = open("./json_annotations/wk1gt_annotations.json")
+    json_data = json.load(json_file)
+    json_file.close()
 
-    for image in coco['images']:
-        if image['id'] is image_id:
-            file_name = image['file_name']
+    image_dir = "./images/"
+    processed_images_dir = "./processed_images/"
 
-    [x, y, w, h] = annotation['bbox']
-    image = cv2.imread("./images/" + file_name)
-    cv2.rectangle(image, (int(x), int(y)), (int(x+w), int(y+h)), (255,0,0), 5)
+    # Copy images from images dir to processed_images dir
+    copy_images(image_dir, processed_images_dir, json_data)
 
-    new_file_name = "./images_with_boxes/" + file_name
-    cv2.imwrite(new_file_name, image)
+    # Loop through all images in dataset
+    for image in json_data['images']:
+        file_name = image['file_name']
+        print("Processing image " + file_name)
+        image_id = image['id']
+        file_path = processed_images_dir + file_name
+        image = cv2.imread(file_path)
+
+        # Draw boxes according to annotations for specified image
+        draw_boxes(image, image_id, json_data)
+        cv2.imwrite(file_path, image)
+
+    print("Done...")
+
+
+def copy_images(from_dir, to_dir, json_data):
+    print("Copying images from " + from_dir + " to " + to_dir + "...")
+    for image in json_data['images']:
+        file_name = image['file_name']
+        image = cv2.imread(from_dir + file_name)
+        cv2.imwrite(to_dir + file_name, image)
+
+
+def draw_boxes(image, image_id, json_data):
+    for annotation in json_data['annotations']:
+        if annotation['image_id'] is image_id:
+            # x,y coordinates are center coordinates of box
+            # w,h is width and height of box
+            [x, y, w, h] = annotation['bbox']
+            cv2.rectangle(image, (int(x - w/2), int(y - h/2)), (int(x + w/2), int(y + h/2)), (255, 0, 0), 1)
+
+
+run()
