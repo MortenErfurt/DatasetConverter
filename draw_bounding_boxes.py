@@ -1,5 +1,4 @@
 import json
-
 import cv2
 
 
@@ -39,7 +38,7 @@ def copy_images(from_dir, to_dir, json_data):
 
 def draw_boxes(image, image_id, json_data):
     for annotation in json_data['annotations']:
-        if annotation['image_id'] is image_id:
+        if annotation['image_id'] == image_id:
             # x,y coordinates are center coordinates of box
             # w,h is width and height of box
             [x, y, w, h] = annotation['bbox']
