@@ -7,8 +7,8 @@ def run():
     json_data = json.load(json_file)
     json_file.close()
 
-    image_dir = "./images/"
-    processed_images_dir = "./processed_images/"
+    image_dir = "./rotated_images/"
+    processed_images_dir = "./processed_images_rotated/"
 
     # Copy images from images dir to processed_images dir
     copy_images(image_dir, processed_images_dir, json_data)
@@ -22,7 +22,8 @@ def run():
         image = cv2.imread(file_path)
 
         # Draw boxes according to annotations for specified image
-        draw_boxes(image, image_id, json_data)
+        # draw_boxes(image, image_id, json_data)
+        draw_boxes_validation_result(image, image_id)
         cv2.imwrite(file_path, image)
 
     print("Done...")
@@ -44,5 +45,19 @@ def draw_boxes(image, image_id, json_data):
             [x, y, w, h] = annotation['bbox']
             cv2.rectangle(image, (int(x - w/2), int(y - h/2)), (int(x + w/2), int(y + h/2)), (255, 0, 0), 1)
 
+
+def draw_boxes_validation_result(image, image_id):
+    json_file = open("./result_wider_caviar_rotated.json")
+    json_data = json.load(json_file)
+    json_file.close()
+
+    for annotation in json_data:
+        if annotation['image_id'] == image_id:
+            # x,y coordinates are center coordinates of box
+            # w,h is width and height of box
+            [x, y, w, h] = annotation['bbox']
+            score = annotation['score']
+            if score >= 0.5:
+                cv2.rectangle(image, (int(x - w/2), int(y - h/2)), (int(x + w/2), int(y + h/2)), (255, 0, 0), 1)
 
 run()
