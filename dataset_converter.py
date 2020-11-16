@@ -42,7 +42,7 @@ class DatasetConverter:
         dataset_names = self.__retrieve_dataset_names(annotations_images_pairs)
         (test_dataset_names, validation_dataset_names) = self.__shuffle_and_split_list_of_dataset_names(dataset_names)
         self.__concatenate_datasets(download_folder, 'test', test_dataset_names)
-        # self.__concatenate_datasets(download_folder, 'validation', validation_dataset_names)
+        self.__concatenate_datasets(download_folder, 'validation', validation_dataset_names)
 
     """
     Retrieves dataset names from list of tuples containing names for xml, tar and url
@@ -305,9 +305,50 @@ class DatasetConverter:
             os.mkdir(destination_folder)
 
         # load the first dataset's json file
-        json_file = open(source_folder + '/' + datasets[0] + '.json')
-        json_data = json.load(json_file)
-        highest_image_id = json_data['images'][-1:][0]['id']
+        resulting_json_file = open(source_folder + '/' + datasets[0] + '.json')
+        to_be_resulting_json_data = json.load(resulting_json_file)
+        resulting_json_file.close()
+
+        # Initial highest id values
+        highest_image_id = len(to_be_resulting_json_data['images'])
+        highest_annotation_id = len(to_be_resulting_json_data['annotations'])
+
+        # load rest of dataset's json files one at a time to concat their data with the first dataset
+        for dataset in datasets:
+            print("Appending dataset " + dataset + " to " + new_dataset_name)
+
+            json_file_dataset = open(source_folder + '/' + dataset + '.json')
+            json_data_dataset = json.load(json_file_dataset)
+
+            # Loop through lists to count up ids
+            for image in json_data_dataset['images']:
+                image_data_copy = image.copy()
+                image_data_copy['id'] = image['id'] + highest_image_id
+
+                to_be_resulting_json_data['images'].append(image_data_copy)
+
+            for annotation in json_data_dataset['annotations']:
+                annotation_data_copy = annotation.copy()
+                annotation_data_copy['id'] = annotation['id'] + highest_annotation_id
+                annotation_data_copy['image_id'] = annotation['image_id'] + highest_image_id
+
+                to_be_resulting_json_data['annotations'].append(annotation_data_copy)
+
+            to_be_resulting_json_data['empty_images'].extend(json_data_dataset['empty_images'])
+            to_be_resulting_json_data['person_images'].extend(json_data_dataset['person_images'])
+
+            # Update highest id values
+            highest_image_id = highest_image_id + len(json_data_dataset['images'])
+            highest_annotation_id = highest_annotation_id + len(json_data_dataset['annotations'])
+
+            json_file_dataset.close()
+
+        resulting_json_data = json.dumps(to_be_resulting_json_data)
+
+        with open(destination_folder + '/' + new_dataset_name + '.json', "w") as resulting_json_file:
+            resulting_json_file.write(resulting_json_data)
+
+        resulting_json_file.close()
 
         # copy images from datasets to one shared folder
         for dataset in datasets:
