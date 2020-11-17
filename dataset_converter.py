@@ -40,7 +40,7 @@ class DatasetConverter:
         #     self.__covert_dataset(download_folder, xml_file_name_no_ext)
 
         dataset_names = self.__retrieve_dataset_names(annotations_images_pairs)
-        (test_dataset_names, validation_dataset_names) = self.__shuffle_and_split_list_of_dataset_names(dataset_names)
+        (test_dataset_names, validation_dataset_names) = self.__shuffle_and_split_list_of_dataset_names(dataset_names, 0.7, 0.3)
         self.__concatenate_datasets(download_folder, 'test', test_dataset_names)
         self.__concatenate_datasets(download_folder, 'validation', validation_dataset_names)
 
@@ -68,13 +68,17 @@ class DatasetConverter:
     :returns test_dataset_names, validation_dataset_names lists
     """
 
-    def __shuffle_and_split_list_of_dataset_names(self, dataset_names):
+    def __shuffle_and_split_list_of_dataset_names(self, dataset_names, test_set_size, validation_set_size):
+        # Test and validation sets must not share data
+        if test_set_size + validation_set_size > 1:
+            return
+
         shuffled_dataset_names = dataset_names.copy()
         random.shuffle(shuffled_dataset_names)
 
         number_of_items = len(shuffled_dataset_names)
-        number_of_items_in_test_set = int(number_of_items * 0.7)
-        number_of_items_in_val_set = number_of_items - number_of_items_in_test_set
+        number_of_items_in_test_set = int(number_of_items * test_set_size)
+        number_of_items_in_val_set = int(number_of_items * validation_set_size)
 
         test_dataset_names = shuffled_dataset_names[:number_of_items_in_test_set]
         validation_dataset_names = shuffled_dataset_names[-number_of_items_in_val_set:]
