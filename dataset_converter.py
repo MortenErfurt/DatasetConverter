@@ -11,67 +11,70 @@ import shutil
 
 
 class DatasetConverter:
-    """
-    Downloads Caviar datasets, converts them to COCO format, and splits them up into test and validation sets
-    """
+    def create_test_and_validation_datasets(self, download_files=False, extract_files=False, convert_datasets=False):
+        """
+        Downloads Caviar datasets, converts them to COCO format, and splits them up into test and validation sets
+        """
 
-    def create_test_and_validation_datasets(self, download_files=False):
         annotations_images_pairs = self.__scrape_website()
 
         download_folder = 'downloads'
 
-        # for annotations_images_pair in annotations_images_pairs:
-        #     xml_file_name = annotations_images_pair[0][0]
-        #     xml_file_url = annotations_images_pair[0][1]
-        #     tar_file_name = annotations_images_pair[1][0]
-        #     tar_file_url = annotations_images_pair[1][1]
-        #
-        #     if download_files:
-        #         self.__download_file(xml_file_url, xml_file_name, download_folder)
-        #         self.__download_file(tar_file_url, tar_file_name, download_folder)
-        #
-        #     # xml file name with out .xml
-        #     xml_file_name_no_ext = xml_file_name[:-4]
-        #
-        #     images_destination_folder = download_folder + '/' + xml_file_name_no_ext
-        #     self.__extract_compressed_dataset(download_folder, tar_file_name, xml_file_name_no_ext,
-        #                                       images_destination_folder)
-        #
-        #     self.__covert_dataset(download_folder, xml_file_name_no_ext)
+        for annotations_images_pair in annotations_images_pairs:
+            xml_file_name = annotations_images_pair[0][0]
+            xml_file_url = annotations_images_pair[0][1]
+            tar_file_name = annotations_images_pair[1][0]
+            tar_file_url = annotations_images_pair[1][1]
+
+            if download_files:
+                self.__download_file(xml_file_url, xml_file_name, download_folder)
+                self.__download_file(tar_file_url, tar_file_name, download_folder)
+
+            # xml file name with out .xml
+            xml_file_name_no_ext = xml_file_name[:-4]
+
+            images_destination_folder = download_folder + '/' + xml_file_name_no_ext
+
+            if extract_files:
+                self.__extract_compressed_dataset(download_folder, tar_file_name, xml_file_name_no_ext,
+                                              images_destination_folder)
+
+            if convert_datasets:
+                # TODO: Parameter for keep only every n images/frames
+                self.__covert_dataset(download_folder, xml_file_name_no_ext)
 
         dataset_names = self.__retrieve_dataset_names(annotations_images_pairs)
         (test_dataset_names, validation_dataset_names) = self.__shuffle_and_split_list_of_dataset_names(dataset_names, 0.7, 0.3)
         self.__concatenate_datasets(download_folder, 'test', test_dataset_names)
         self.__concatenate_datasets(download_folder, 'validation', validation_dataset_names)
 
-    """
-    Retrieves dataset names from list of tuples containing names for xml, tar and url
-    Dataset name is the same as the name of the xml file without the .xml extension
-    
-    :parameter annotations_images_pairs list of ((xml_file_name, xml_file_url), (tar_file_name, tar_file_url)) tuples
-    :returns list of dataset names
-    """
-
     def __retrieve_dataset_names(self, annotations_images_pairs):
+        """
+        Retrieves dataset names from list of tuples containing names for xml, tar and url
+        Dataset name is the same as the name of the xml file without the .xml extension
+
+        :parameter annotations_images_pairs list of ((xml_file_name, xml_file_url), (tar_file_name, tar_file_url)) tuples
+        :returns list of dataset names
+        """
         dataset_names = []
         for annotations_images_pair in annotations_images_pairs:
             dataset_names.append((annotations_images_pair[0][0])[:-4])
 
         return dataset_names
 
-    """
-    First shuffles the list of annotations in order to randomize the test/validation set split
-    Then splits the list of annotations into two lists, 
-    where 70% of org. list is in first, and the remaining 30% is in the other
-    
-    :parameter dataset_names is the list of dataset names
-    :returns test_dataset_names, validation_dataset_names lists
-    """
-
     def __shuffle_and_split_list_of_dataset_names(self, dataset_names, test_set_size, validation_set_size):
+        """
+        First shuffles the list of annotations in order to randomize the test/validation set split
+        Then splits the list of annotations into two lists,
+        where 70% of org. list is in first, and the remaining 30% is in the other
+
+        :parameter dataset_names is the list of dataset names
+        :returns test_dataset_names, validation_dataset_names lists
+        """
+
         # Test and validation sets must not share data
         if test_set_size + validation_set_size > 1:
-            return
+            raise Exception('Test size + validation size must not exceed 100% of datasets size')
 
         shuffled_dataset_names = dataset_names.copy()
         random.shuffle(shuffled_dataset_names)
@@ -85,13 +88,13 @@ class DatasetConverter:
 
         return test_dataset_names, validation_dataset_names
 
-    """
-    Get CAVIAR dataset information using web scraping
-    
-    :returns [((xml_file_name, xml_file_url), (tar_file_name, tar_file_url))]
-    """
-
     def __scrape_website(self):
+        """
+        Get CAVIAR dataset information using web scraping
+
+        :returns [((xml_file_name, xml_file_url), (tar_file_name, tar_file_url))]
+        """
+
         print('Beginning to scrape website')
         # setup
         options = Options()
@@ -132,20 +135,20 @@ class DatasetConverter:
 
         return annotations_images_pairs
 
-    """
-    Downloads a file from specified url to destination folder
-    """
-
     def __download_file(self, url, file_name, destination_folder):
+        """
+        Downloads a file from specified url to destination folder
+        """
+
         print('Downloading ' + file_name)
         r = requests.get(url, allow_redirects=True)
         open(destination_folder + '/' + file_name, 'wb').write(r.content)
 
-    """
-    Extracts content of tar file into specified folder
-    """
-
     def __extract_compressed_dataset(self, tar_file_location, tar_file_name, xml_file_name, image_destination_folder):
+        """
+        Extracts content of tar file into specified folder
+        """
+
         with tarfile.open(tar_file_location + '/' + tar_file_name) as tar:
             # removing the file extension from the folder name
             # we use the xml files name for the folder, as it will make matching of these easier
@@ -181,13 +184,13 @@ class DatasetConverter:
 
                 tar.makefile(member, image_destination_folder + '/' + new_file_name)
 
-    """
-    Converts a Caviar dataset in XML format into COCO JSON format
-    
-    :parameter xml_file_name is only file name, without path and extension
-    """
-
     def __covert_dataset(self, source_directory, xml_file_name):
+        """
+        Converts a Caviar dataset in XML format into COCO JSON format
+
+        :parameter xml_file_name is only file name, without path and extension
+        """
+
         print('Convert dataset "' + xml_file_name + '" to json format')
         with open(source_directory + '/' + xml_file_name + '.xml') as xml_file:
             data_dict = xmltodict.parse(xml_file.read())
@@ -207,8 +210,6 @@ class DatasetConverter:
         categories = []
         images = []
         annotations = []
-        empty_images = []
-        person_images = []
 
         licenses.append({
             'url': "http://creativecommons.org/licenses/by-nc-sa/2.0/",
@@ -217,9 +218,8 @@ class DatasetConverter:
         })
 
         categories.append({
-            'id': 1,
-            'name': "pedestrain",  # Misspelled on purpose
-            'supercategory': "pedestrain"
+            'id': 0,
+            'name': 'person'
         })
 
         for entry in data_dict['dataset']['frame']:
@@ -234,19 +234,12 @@ class DatasetConverter:
                 'file_name': file_name,
                 'width': width,
                 'height': height,
-                'date_captured': "",
                 'licence': 1,
-                'coco_url': "",
-                'flickr_url': ""
             }
 
             images.append(image)
 
-            if entry['objectlist'] is None:
-                empty_images.append(file_name)
-            else:
-                person_images.append(file_name)
-
+            if entry['objectlist'] is not None:
                 objects = entry['objectlist']['object']
                 object_list = []
                 if isinstance(objects, list):
@@ -268,13 +261,12 @@ class DatasetConverter:
                     annotation = {
                         'id': len(annotations) + 1,
                         'image_id': image_id,
-                        'category_id': 1,
-                        'iscrowd': 1 if (len(objects) > 1) else 0,
+                        'category_id': 0,
                         'bbox': bbox,
                         'width': width,
                         'height': height,
-                        'segmentation': [],
-                        'area': bbox_width * bbox_height
+                        'area': bbox_width * bbox_height,
+                        'iscrowd': 0  # we set this to 0 as this means that no persons are close to each other
                     }
 
                     annotations.append(annotation)
@@ -284,9 +276,7 @@ class DatasetConverter:
             'licenses': licenses,
             'categories': categories,
             'images': images,
-            'annotations': annotations,
-            'empty_images': empty_images,
-            'person_images': person_images
+            'annotations': annotations
         }
 
         json_data = json.dumps(json_dict)
@@ -296,11 +286,11 @@ class DatasetConverter:
 
         json_file.close()
 
-    """
-    Concatenates datasets
-    """
-
     def __concatenate_datasets(self, source_folder, new_dataset_name, datasets):
+        """
+        Concatenates datasets
+        """
+
         print('Beginning to concatenate dataset to create new dataset: ' + new_dataset_name)
 
         destination_folder = source_folder + '/' + new_dataset_name
