@@ -76,7 +76,5 @@ def run():
                 file_name = member.name.rsplit('/', 1)[1]
                 tar.makefile(member, destination_folder + '/' + file_name)
 
-        break
-
 
 run()

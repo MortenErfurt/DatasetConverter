@@ -10,8 +10,9 @@ import json
 import shutil
 
 
-class DatasetConverter:
-    def create_test_and_validation_datasets(self, download_files=False, extract_files=False, convert_datasets=False):
+class CaviarDatasetConverter:
+    def create_test_and_validation_datasets(self, download_files=False, extract_files=False, convert_datasets=False,
+                                            frame_jump=19):
         """
         Downloads Caviar datasets, converts them to COCO format, and splits them up into test and validation sets
         """
@@ -37,16 +38,16 @@ class DatasetConverter:
 
             if extract_files:
                 self.__extract_compressed_dataset(download_folder, tar_file_name, xml_file_name_no_ext,
-                                              images_destination_folder)
+                                                  images_destination_folder)
 
             if convert_datasets:
-                # TODO: Parameter for keep only every n images/frames
-                self.__covert_dataset(download_folder, xml_file_name_no_ext)
+                self.__covert_dataset(download_folder, xml_file_name_no_ext, frame_jump)
 
         dataset_names = self.__retrieve_dataset_names(annotations_images_pairs)
-        (test_dataset_names, validation_dataset_names) = self.__shuffle_and_split_list_of_dataset_names(dataset_names, 0.7, 0.3)
+        (train_dataset_names, test_dataset_names) = self.__shuffle_and_split_list_of_dataset_names(dataset_names,
+                                                                                                   0.7, 0.3)
+        self.__concatenate_datasets(download_folder, 'train', train_dataset_names)
         self.__concatenate_datasets(download_folder, 'test', test_dataset_names)
-        self.__concatenate_datasets(download_folder, 'validation', validation_dataset_names)
 
     def __retrieve_dataset_names(self, annotations_images_pairs):
         """
@@ -56,6 +57,7 @@ class DatasetConverter:
         :parameter annotations_images_pairs list of ((xml_file_name, xml_file_url), (tar_file_name, tar_file_url)) tuples
         :returns list of dataset names
         """
+
         dataset_names = []
         for annotations_images_pair in annotations_images_pairs:
             dataset_names.append((annotations_images_pair[0][0])[:-4])
@@ -135,9 +137,16 @@ class DatasetConverter:
 
         return annotations_images_pairs
 
-    def __download_file(self, url, file_name, destination_folder):
+    def __download_file(self, url: str, file_name: str, destination_folder: str) -> None:
         """
         Downloads a file from specified url to destination folder
+        :param url: The URL of the file to download
+        :type url: str
+        :param file_name: The downloaded file's new name
+        :type file_name: str
+        :param destination_folder:
+        :type destination_folder:
+        :rtype: None
         """
 
         print('Downloading ' + file_name)
@@ -184,11 +193,13 @@ class DatasetConverter:
 
                 tar.makefile(member, image_destination_folder + '/' + new_file_name)
 
-    def __covert_dataset(self, source_directory, xml_file_name):
+    def __covert_dataset(self, source_directory, xml_file_name, frame_jump):
         """
         Converts a Caviar dataset in XML format into COCO JSON format
 
-        :parameter xml_file_name is only file name, without path and extension
+        :parameter source_directory: the directory to find the xml file
+        :parameter xml_file_name: is only file name, without path and extension
+        :parameter frame_jump: the distance between frames to keep. i.e. if frame_jump=10, then every 10 frame is included
         """
 
         print('Convert dataset "' + xml_file_name + '" to json format')
@@ -222,10 +233,25 @@ class DatasetConverter:
             'name': 'person'
         })
 
+        image_id = 0
+        remaining_jumps = frame_jump
+
         for entry in data_dict['dataset']['frame']:
             frame_number = int(entry['@number'])
-            image_id = frame_number + 1
             file_name = xml_file_name + str(frame_number + 1) + ".jpg"
+
+            if remaining_jumps > 0:
+                remaining_jumps = remaining_jumps - 1
+                os.remove(source_directory + '/' + xml_file_name + '/' + file_name)
+                continue
+            else:
+                # Increment image_id
+                image_id = image_id + 1
+
+                # Reset remaining_jumps (as we are here, we know that we should skip the next frame_jump frames)
+                remaining_jumps = frame_jump
+
+            # image_id = frame_number + 1
             width = 384
             height = 288
 
@@ -251,9 +277,12 @@ class DatasetConverter:
                     bbox_width = float(obj['box']['@w'])
                     bbox_height = float(obj['box']['@h'])
 
+                    bbox_top_left_x = float(obj['box']['@xc']) - (bbox_width / 2)
+                    bbox_top_left_y = float(obj['box']['@yc']) - (bbox_height / 2)
+
                     bbox = [
-                        float(obj['box']['@xc']),
-                        float(obj['box']['@yc']),
+                        bbox_top_left_x,
+                        bbox_top_left_y,
                         bbox_width,
                         bbox_height
                     ]
@@ -327,9 +356,6 @@ class DatasetConverter:
                 annotation_data_copy['image_id'] = annotation['image_id'] + highest_image_id
 
                 to_be_resulting_json_data['annotations'].append(annotation_data_copy)
-
-            to_be_resulting_json_data['empty_images'].extend(json_data_dataset['empty_images'])
-            to_be_resulting_json_data['person_images'].extend(json_data_dataset['person_images'])
 
             # Update highest id values
             highest_image_id = highest_image_id + len(json_data_dataset['images'])
